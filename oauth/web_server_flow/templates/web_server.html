@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html>
+    <head></head>
+    <body>
+        <h1>Account List</h1>
+        <ul id="account-list"></ul>
+        <script>
+            //Invoke loadAccounts() when this HTML is shown
+            loadAccounts();
+
+            async function loadAccounts() {
+                // Invoke get_accounts() in views.py
+                let response = await fetch("./accounts");
+                if (response.status !== 200) {
+                    if (response.status === "401") {
+                        // If 401(Unauthorized) is returned,
+                        // reload this page to get redirected to SFDC login page
+                        location.reload();
+                    } else {
+                        alert("Unexpected Error");
+                    }
+                    return;
+                }
+
+                let data = await response.json();
+                displayAccounts(data.records);
+            }
+
+            function displayAccounts(accounts) {
+                let accountList = document.getElementById("account-list");
+                for (let account of accounts) {
+                    let listItem = document.createElement("li");
+                    listItem.textContent = account.Name;
+                    accountList.appendChild(listItem);
+                }
+            }
+        </script>
+    </body>
+</html>

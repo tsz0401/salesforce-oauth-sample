@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html>
+    <head></head>
+    <body>
+        <div id="forLogin">
+            Please open the following QR code on your smartphone, and enter the following code:{{user_code}}
+            <br />
+            <img src="https://chart.apis.google.com/chart?chs=150x150&cht=qr&chl={{verification_uri}}" />
+        </div>
+        <h1>Account List</h1>
+        <ul id="account-list"></ul>
+        <script>
+            async function checkRequestResult() {
+                let response = await fetch("./check_request_result?device_code={{device_code}}");
+                let data = await response.json();
+                if (!data.access_token) {
+                    setTimeout(checkRequestResult, 3000);
+                } else {
+                    let access_token = data.access_token;
+                    let instance_url = data.instance_url;
+                    loadAccounts(instance_url, access_token);
+                }
+            }
+
+            async function loadAccounts(instance_url, access_token) {
+                let url = instance_url + "/services/data/v52.0/query?q=SELECT+name+from+Account";
+                let response = await fetch(url, {
+                    headers: {
+                        Authorization: "Bearer " + access_token,
+                    },
+                });
+                let data = await response.json();
+                displayAccounts(data.records);
+            }
+            function displayAccounts(accounts) {
+                let accountList = document.getElementById("account-list");
+                for (let account of accounts) {
+                    let listItem = document.createElement("li");
+                    listItem.textContent = account.Name;
+                    accountList.appendChild(listItem);
+                }
+            }
+
+            setTimeout(checkRequestResult, 10000);
+        </script>
+    </body>
+</html>

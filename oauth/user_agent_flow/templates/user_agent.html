@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html>
+    <head></head>
+    <body>
+        <h1>Account List</h1>
+        <ul id="account-list"></ul>
+        <script>
+            //Invoke init() when this HTML is shown
+            init();
+
+            function init() {
+                let cookieMap = getCookieMap();
+                if (window.location.href.includes("#access_token")) {
+                    let params = window.location.href.split("#")[1];
+                    var searchParams = new URLSearchParams(params);
+                    let access_token = searchParams.get("access_token");
+                    let instance_url = searchParams.get("instance_url");
+                    document.cookie = "access_token=" + access_token;
+                    document.cookie = "instance_url=" + instance_url;
+                    loadAccounts(instance_url, access_token);
+                } else if (cookieMap.access_token) {
+                    console.log("has cookie");
+                    loadAccounts(cookieMap.instance_url, cookieMap.access_token);
+                } else {
+                    showLoginPage();
+                }
+            }
+
+            function showLoginPage() {
+                let loginPageURL = "{{login_url}}/services/oauth2/authorize?";
+                loginPageURL += "response_type=token";
+                loginPageURL += "&client_id={{client_id}}";
+                loginPageURL += "&redirect_uri=" + location.href;
+                window.location.href = loginPageURL;
+            }
+
+            async function loadAccounts(instance_url, access_token) {
+                let url = instance_url + "/services/data/v52.0/query?q=SELECT+name+from+Account";
+                try {
+                    let response = await fetch(url, {
+                        headers: {
+                            Authorization: "Bearer " + access_token,
+                        },
+                    });
+                    if (response.status !== 200) {
+                        showLoginPage();
+                        return;
+                    }
+                    let data = await response.json();
+                    displayAccounts(data.records);
+                } catch (e) {
+                    showLoginPage();
+                }
+            }
+
+            function displayAccounts(accounts) {
+                let accountList = document.getElementById("account-list");
+                for (let account of accounts) {
+                    let listItem = document.createElement("li");
+                    listItem.textContent = account.Name;
+                    accountList.appendChild(listItem);
+                }
+            }
+
+            function getCookieMap() {
+                var arr = {};
+                if (document.cookie != "") {
+                    var tmp = document.cookie.split("; ");
+                    for (var i = 0; i < tmp.length; i++) {
+                        var data = tmp[i].split("=");
+                        arr[data[0]] = decodeURIComponent(data[1]);
+                    }
+                }
+                return arr;
+            }
+        </script>
+    </body>
+</html>
