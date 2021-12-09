@@ -1,5 +1,8 @@
 import oauth.device_flow.views
 import oauth.user_agent_flow.views
+import oauth.hybrid_flow.views
+import oauth.pkce_flow.views
+import oauth.asset_token_flow.views
 import oauth.web_server_flow.views
 import oauth.jwt_flow.views
 import oauth.password_flow.views
@@ -32,6 +35,12 @@ urlpatterns = [
     path("oauth/webserver/accounts", oauth.web_server_flow.views.get_accounts),
 
     path("oauth/useragent/", oauth.user_agent_flow.views.get_html),
+   
+    path("oauth/hybrid/", oauth.hybrid_flow.views.get_html),
+
+    path("oauth/pkce/", oauth.pkce_flow.views.get_html),
+
+    path("oauth/asset_token/", oauth.asset_token_flow.views.get_html),
 
     path("oauth/device/", oauth.device_flow.views.get_html),
     path("oauth/device/check_request_result", oauth.device_flow.views.check_request_result),

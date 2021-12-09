@@ -45,6 +45,9 @@ INSTALLED_APPS = [
     "oauth.web_server_flow",
     "oauth.user_agent_flow",
     "oauth.device_flow",
+    "oauth.hybrid_flow",
+    "oauth.pkce_flow",
+    "oauth.asset_token_flow",
 ]
 
 MIDDLEWARE = [

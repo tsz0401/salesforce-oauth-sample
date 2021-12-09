@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html>
+    <head></head>
+    <body>
+        <h1>Account List</h1>
+        <ul id="account-list"></ul>
+        <script>
+            //Invoke init() when this HTML is shown
+            init();
+
+            async function init() {
+                let cookieMap = getCookieMap();
+                if (window.location.href.includes("?code")) {
+                    let code = decodeURIComponent(window.location.href.split("?code=")[1]);
+                    let token_dict = await getAccessToken(code);
+                    debugger;
+                    let access_token = token_dict.access_token;
+                    let instance_url = token_dict.instance_url;
+                    let refresh_token = token_dict.refresh_token;
+                    document.cookie = "access_token=" + access_token;
+                    document.cookie = "instance_url=" + instance_url;
+                    document.cookie = "refresh_token=" + refresh_token;
+                    loadAccounts(instance_url, access_token);
+                } else if (cookieMap.access_token) {
+                    console.log("has cookie");
+                    loadAccounts(cookieMap.instance_url, cookieMap.access_token);
+                } else {
+                    showLoginPage();
+                }
+            }
+
+            async function showLoginPage() {
+                let codeVerifier = getCodeVerifier();
+                let codeChallenge = await generateCodeChallengeFromVerifier(codeVerifier);
+                let loginPageURL = "{{login_url}}/services/oauth2/authorize?";
+                loginPageURL += "response_type=code";
+                loginPageURL += "&client_id={{client_id}}";
+                loginPageURL += "&redirect_uri=" + location.href;
+                loginPageURL += "&code_challenge=" + codeChallenge;
+                loginPageURL += "&nonce=" + new Date().getTime();
+                window.location.href = loginPageURL;
+            }
+
+            async function getAccessToken(code) {
+                let url = "https://oauthtest-dev-ed.my.salesforce.com/services/oauth2/token";
+                try {
+                    const params = createURLSearchParams({
+                        grant_type: "authorization_code",
+                        code: code,
+                        client_id: "{{client_id}}",
+                        redirect_uri: location.href,
+                        code_verifier: getCodeVerifier(),
+                    });
+                    let response = await fetch(url, {
+                        method: "POST",
+                        body: params,
+                    });
+                    if (response.status !== 200) {
+                        showLoginPage();
+                        return;
+                    }
+                    let data = await response.json();
+                    return data;
+                } catch (e) {
+                    showLoginPage();
+                }
+            }
+            function createURLSearchParams(data) {
+                const params = new URLSearchParams();
+                Object.keys(data).forEach((key) => params.append(key, data[key]));
+                return params;
+            }
+
+            async function loadAccounts(instance_url, access_token) {
+                let url = instance_url + "/services/data/v52.0/query?q=SELECT+name+from+Account";
+                try {
+                    let response = await fetch(url, {
+                        headers: {
+                            Authorization: "Bearer " + access_token,
+                        },
+                    });
+                    if (response.status !== 200) {
+                        showLoginPage();
+                        return;
+                    }
+                    let data = await response.json();
+                    displayAccounts(data.records);
+                } catch (e) {
+                    showLoginPage();
+                }
+            }
+
+            function displayAccounts(accounts) {
+                let accountList = document.getElementById("account-list");
+                for (let account of accounts) {
+                    let listItem = document.createElement("li");
+                    listItem.textContent = account.Name;
+                    accountList.appendChild(listItem);
+                }
+            }
+
+            function getCookieMap() {
+                var arr = {};
+                if (document.cookie != "") {
+                    var tmp = document.cookie.split("; ");
+                    for (var i = 0; i < tmp.length; i++) {
+                        var data = tmp[i].split("=");
+                        arr[data[0]] = decodeURIComponent(data[1]);
+                    }
+                }
+                return arr;
+            }
+
+            function getCodeVerifier() {
+                let cookieMap = getCookieMap();
+                let result = cookieMap.code_verifier;
+                if (!result) {
+                    result = generateCodeVerifier();
+                    document.cookie = "code_verifier=" + result;
+                }
+                return result;
+            }
+
+            function dec2hex(dec) {
+                return ("0" + dec.toString(16)).substr(-2);
+            }
+            function generateCodeVerifier() {
+                var array = new Uint32Array(56 / 2);
+                window.crypto.getRandomValues(array);
+                return Array.from(array, dec2hex).join("");
+            }
+
+            function sha256(plain) {
+                // returns promise ArrayBuffer
+                const encoder = new TextEncoder();
+                const data = encoder.encode(plain);
+                return window.crypto.subtle.digest("SHA-256", data);
+            }
+
+            function base64urlencode(a) {
+                var str = "";
+                var bytes = new Uint8Array(a);
+                var len = bytes.byteLength;
+                for (var i = 0; i < len; i++) {
+                    str += String.fromCharCode(bytes[i]);
+                }
+                return btoa(str).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+            }
+
+            async function generateCodeChallengeFromVerifier(v) {
+                var hashed = await sha256(v);
+                var base64encoded = base64urlencode(hashed);
+                return base64encoded;
+            }
+        </script>
+    </body>
+</html>
