@@ -13,7 +13,6 @@
                 if (window.location.href.includes("?code")) {
                     let code = decodeURIComponent(window.location.href.split("?code=")[1]);
                     let token_dict = await getAccessToken(code);
-                    debugger;
                     let access_token = token_dict.access_token;
                     let instance_url = token_dict.instance_url;
                     let refresh_token = token_dict.refresh_token;
@@ -42,7 +41,7 @@
             }
 
             async function getAccessToken(code) {
-                let url = "https://oauthtest-dev-ed.my.salesforce.com/services/oauth2/token";
+                let url = "https://{{my_domain}}/services/oauth2/token";
                 try {
                     const params = createURLSearchParams({
                         grant_type: "authorization_code",
